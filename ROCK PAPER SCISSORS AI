@@ -1,0 +1,186 @@
+import java.awt.*;
+import java.util.*;
+import javax.swing.*;
+
+public class RockPaperScissorsGUI2 extends JFrame {
+
+    private static final String[] MOVES = {"rock", "paper", "scissors"};
+    private Map<String, Integer> frequencyMap = new HashMap<>();
+    private DefaultListModel<String> historyModel = new DefaultListModel<>();
+    private int wins = 0, losses = 0, draws = 0;
+
+    private JLabel aiMoveLabel, resultLabel, statsLabel;
+    private JList<String> historyList;
+
+    public RockPaperScissorsGUI2() {
+        initializeFrequencyMap();
+        setupUI();
+    }
+
+    private void setupUI() {
+        setTitle("🎮 Rock Paper Scissors AI");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(700, 500);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(new Color(30, 30, 30));
+
+        // Title Label
+        JLabel titleLabel = new JLabel("Rock Paper Scissors AI", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        add(titleLabel, BorderLayout.NORTH);
+
+        // Bottom Panel (Buttons)
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setBackground(new Color(30, 30, 30));
+
+        JButton rockBtn = createStyledButton("🪨 Rock", "rock");
+        JButton paperBtn = createStyledButton("📄 Paper", "paper");
+        JButton scissorsBtn = createStyledButton("✂ Scissors", "scissors");
+
+        JButton resetBtn = new JButton("🔄 Reset");
+        resetBtn.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        resetBtn.setBackground(new Color(220, 20, 60));
+        resetBtn.setForeground(Color.WHITE);
+        resetBtn.setFocusPainted(false);
+        resetBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        resetBtn.setPreferredSize(new Dimension(160, 50));
+        resetBtn.addActionListener(e -> resetGame());
+
+        buttonPanel.add(rockBtn);
+        buttonPanel.add(paperBtn);
+        buttonPanel.add(scissorsBtn);
+        buttonPanel.add(resetBtn);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Center Panel (Results)
+        JPanel centerPanel = new JPanel(new GridLayout(3, 1, 0, 10));
+        centerPanel.setBackground(new Color(30, 30, 30));
+
+        aiMoveLabel = createStyledLabel("AI Move: ", Color.CYAN);
+        resultLabel = createStyledLabel("Result: ", Color.ORANGE);
+        statsLabel = createStyledLabel("Wins: 0 | Losses: 0 | Draws: 0", Color.GREEN);
+
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        centerPanel.add(aiMoveLabel);
+        centerPanel.add(resultLabel);
+        centerPanel.add(statsLabel);
+
+        add(centerPanel, BorderLayout.CENTER);
+
+        // Right Panel (Match History)
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(new Color(45, 45, 45));
+        rightPanel.setPreferredSize(new Dimension(300, 0));
+
+        JLabel historyTitle = new JLabel("🕒 Match History", SwingConstants.CENTER);
+        historyTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        historyTitle.setForeground(Color.WHITE);
+        historyTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+
+        historyList = new JList<>(historyModel);
+        historyList.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        historyList.setBackground(new Color(60, 60, 60));
+        historyList.setForeground(Color.WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(historyList);
+        scrollPane.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+        rightPanel.add(historyTitle, BorderLayout.NORTH);
+        rightPanel.add(scrollPane, BorderLayout.CENTER);
+        add(rightPanel, BorderLayout.EAST);
+
+        setVisible(true);
+    }
+
+    private JButton createStyledButton(String text, String move) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        btn.setBackground(new Color(70, 130, 180));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(160, 50));
+        btn.addActionListener(e -> play(move));
+        return btn;
+    }
+
+    private JLabel createStyledLabel(String text, Color color) {
+        JLabel label = new JLabel(text, SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        label.setForeground(color);
+        return label;
+    }
+
+    private void play(String userMove) {
+        frequencyMap.put(userMove, frequencyMap.get(userMove) + 1);
+        String aiMove = getAIMove();
+        String result = getResult(userMove, aiMove);
+
+        aiMoveLabel.setText("AI Move: " + aiMove);
+        resultLabel.setText("Result: " + result);
+
+        switch (result) {
+            case "You Win": wins++; break;
+            case "AI Wins": losses++; break;
+            case "Draw": draws++; break;
+        }
+
+        statsLabel.setText("Wins: " + wins + " | Losses: " + losses + " | Draws: " + draws);
+        historyModel.add(0, "You: " + userMove + " | AI: " + aiMove + " => " + result);
+    }
+
+    private void resetGame() {
+        wins = losses = draws = 0;
+        statsLabel.setText("Wins: 0 | Losses: 0 | Draws: 0");
+        historyModel.clear();
+        initializeFrequencyMap();
+        aiMoveLabel.setText("AI Move: ");
+        resultLabel.setText("Result: ");
+    }
+
+    private void initializeFrequencyMap() {
+        frequencyMap.clear();
+        for (String move : MOVES) {
+            frequencyMap.put(move, 0);
+        }
+    }
+
+    private String getAIMove() {
+        String predicted = "rock";
+        int max = -1;
+        for (Map.Entry<String, Integer> entry : frequencyMap.entrySet()) {
+            if (entry.getValue() > max) {
+                max = entry.getValue();
+                predicted = entry.getKey();
+            }
+        }
+        return getCounterMove(predicted);
+    }
+
+    private String getCounterMove(String move) {
+        switch (move) {
+            case "rock": return "paper";
+            case "paper": return "scissors";
+            case "scissors": return "rock";
+            default: return "rock";
+        }
+    }
+
+    private String getResult(String user, String ai) {
+        if (user.equals(ai)) return "Draw";
+        if ((user.equals("rock") && ai.equals("scissors")) ||
+            (user.equals("paper") && ai.equals("rock")) ||
+            (user.equals("scissors") && ai.equals("paper"))) {
+            return "You Win";
+        }
+        return "AI Wins";
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(RockPaperScissorsGUI2::new);
+    }
+}
+
